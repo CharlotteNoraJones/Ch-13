@@ -1,3 +1,0 @@
-C:/Users/charl/Documents/Projects/ch-10/build/CMakeFiles/Notes.dir
-C:/Users/charl/Documents/Projects/ch-10/build/CMakeFiles/edit_cache.dir
-C:/Users/charl/Documents/Projects/ch-10/build/CMakeFiles/rebuild_cache.dir
