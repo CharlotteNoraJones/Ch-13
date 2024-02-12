@@ -1,377 +1,375 @@
-// Ch.12 Containers
+// Ch.13 Algorithms
 
-//12.1 Introduction
-// containers are classes whose job is to hold other objects
-// std::string is and example
-
-// 12.2 vector
-// usual implementation of vector:
-// ptr to first element
-// ptr to one-past-the-last-element
-// ptr to one-past-the-last-allocated-space
-// allocator, can be used to acquire memory
-
-// default allocator uses new and delete and acquire and release memory
-
-// there's an optimization technique that makes it unneccsary to store data for simple allocators in the vector object.
-
-#include<vector>
-#include<string>
-#include<iostream>
-
-// example of a vector
+// 13.1 Introduction
+// standard library provides common algos
+#include <vector>
+#include <list>
+#include <string>
+#include <<algorithm>
+#include <iostream>
 
 struct Entry {
     std::string name;
-    int phoneNum;
+    int number;
 };
 
-std::vector<Entry> phone_book = {
-    {"David Hume", 123456},
-    {"Karl Popper", 234567},
-    {"Bertrand Arthur William Russel", 345678}
-};
 
-// this would work if we defined << for Entry
-
-void print_book(const std::vector<Entry>& book)
+void f(std::vector<Entry>& vec, std::list<Entry>& lst)
 {
-    for(int i = 0; i!=book.size(); ++i)
-        std::cout << book[i] << '\n';
+    std::sort(vec.begin(),vec.end()); // use < for order
+    std::unique_copy(vec.begin(),vec.end(),lst.begin()); // don't copy adjacent equal elements
 }
 
-// we could also use a range-for loop
-void print_book(const std::vector<Entry>& book)
+bool operator<(const Entry& x, const Entry& y) // less than
 {
-    for (const auto& x : book)
-        std::cout << x << "\n";
+    return x.name<y.name; // order Entries by their name
 }
 
-// when define a std::vector, we give it an initial size
-std::vector<int> v1 = {1, 2, 3, 4}; // size is 4
-std::vector<std::string>> v2; //size is 0;
-std::vector<Shape*> v3(23); // size is 23, initial element value: nullptr
-std::<vector> v4(32, 9.9); // size is 32; initial element value: 9.9
+// std algo is expressed in terms of half open sequences of elements
+// sequence: a pair of iterators specifing the first element and one-beyond the last element
 
+// in the above example, lst has to have >= the amount of elements in vec to avoid errors
+// there is no range checking by default for std::unique_copy, lst being bigger will result in
+// undefined behaivor
 
-// elements are initialized to the element's default value if not provided with a value
-
-// size can be changed after initialization. 
-// push_back can add for values
-
-void input()
-{
-    for (Entry e: std::cin>>e;)
-        phone_book.push_back(e);
-}
-
-// example of a vector class that can increase in size
-
-template<typename T>
-class Vector {
-    allocator<T> alloc; // standard-library allocator of space for Ts
-    T* elem; // pointer to first element
-    T* space; // pointer to first unused(and uninitialized) slot
-    T* last; // pointer to last slot
+// abtraction implementation for range-checking when writing into a container
+template<typename C>
+class Checked_iter {
     public: 
-        // ..
-        int size() const {return space-elem;} // number of elements
-        int capacity() const {return last-elem;} // number of slots available for elements
-        // ..
-        void reserve(int newsz); // increase capacity() to newsz
-        // ..
-        void push_back(const T& t); // copy t into Vector
-        void push_back(T&& t); // move t into Vector
+        using value_type = typename C::value_type;
+        using difference_type = int;
+
+        Checked_iter() { throw Missing_container{};} // concept forward_iterator requires a default constructor
+        Checked_iter(C& cc) : pc {&cc} {}
+        Checked_iter(C& cc, typename C::iterator pp) : pc { &cc}. p {pp} {}
+
+        Checked_iter& operator++() {checked_end(); ++p; return *this;}
+        Checked_iter operator++(int) { checked_end(); auto t{*this};++p;return t;}
+        value_type& operator*() const { check_end(); return *p; }
+
+        bool operator==(const Checked_iter& a) const { return p==a.p;}
+        bool operator!=(const Checked_iter& a) const {return p!=a.p;}
+
+    private:
+        void check_end() const { if (p == pc -> end()) throw Overflow{}; }
+        C* pc {}; // default initialize to nullptr
+        typename C::iterator p = pc -> begin();
 };
 
-// when elements are moved to a new and larger allocation, pointers to it are broken. 
+std::vector<int> v1 {1, 2, 3}; // three elements
+std::vector<int> v2(2); // two elements
 
-// implementation of push_back
+std::copy(v1,vs.begin()); // will overflow
+std::copy(v1,Checked_iter{v2}); // will throw
+
+// if we wanted to place the unique elements in a new list in the function above:
+
+std::list<Entry> f(std::vector<Entry>& vec)
+{
+    std::list<Entry> res;
+    std::sort(vec.begin(),vec.end());
+    std::unique_copy(vec.begin().vec.end(),std::back_inserted(res)); // append to res
+    return res;
+}
+
+// back_intserter constructs an iterator for res that adds elements to the end of a container, extending the container to make room
+// otherwise, we would have to allocate a fixed amoung of space and then fill it
+// this eliminates the need to use error-prone explicit C-style memory management using realloc()
+// std has a move construct that makes returning res by value efficient(even if the list has thousands of elements)
+
+// writing sort(vec) will use the range version of the algorithims
+
+for (auto& x : v) std::cout << x;   //write out all the elements of v
+for (auto p = v.begin(); p!=v.end();++p) std::cout << *p;   // write out all the elements of 
+// range-for is more efficient and less error prone
+
+// 13.2 Use of Iterators
+// many algos in standard lib return iterators
+
+bool has_c(const std::string& s, char c) // does s contain the character c?
+{
+    auto p = std::find(s.begin(),s.end(),c);
+    if (p!=s.end())
+        return true;
+    else
+        return false;
+}
+
+// find() returns end() to endicate not found
+// this is common for many standard library algos
+
+// equivalent shorter function
+bool has_c_short(const std::string& s, char c) // does a contain the character c?
+{
+    return std::find(s,c)!=s.end();
+}
+
+// finding the location of all the occurences of a character in a string. 
+// (returning a std vector is efficient because it has move semantics)
+
+std::vector<std::string::iterator> find_all(std::string& s, char c) // find all occurences of c in s
+{
+    std::vector<char*> res;
+    for (auto p = s.begin(); p!=s.end(); ++p)
+        if(*p==c)
+            res.push_back(&*p);
+    return res;
+}
+
+// test of find_all()
+
+void test()
+{
+    std::string m {"Mary had a little lamb"};
+    for (auto p : find_all(m,'a'))
+        if (*p='a')
+            std::cerr << "a bug\n";
+}
+
+// iterators and std algo work the same on every container that their use makes sense on. 
+
+// generalization of find all
+
+template<typename C, typename V>
+std::vector<typename C::iterator> find_all(C& c, V c) // find all occurences of v in c
+{
+    std::vector<typename C::iterator> res;
+    for (auto p = c.begin(); p!=c.end(); ++p)
+        if (*p==v)
+            res.push_back(p);
+    return res;
+}
+
+// typename informs the compiler that C iterator is a type and not a value of some type
+
+// returning a vector of ordinary pointers to the elements
+template<typename C, typename V>
+auto find_all(C& c, V v) // find all occurences of v in c
+{
+    std::vector<range_value_t<C>*> res;
+    for (auto& x:c)
+        res.push_back(&x);
+    return res;
+}
+
+// definition for a simplified version of range_value_t
 
 template<typename T>
-void Vector<T>::push_back(const T& t)
+using range_value_type_t = T::value_type;
+
+// code using find_all. Any of the above versions will work in this code. 
+void test()
 {
-    if (capacity()<=size()) // make sure that we have space for t
-        reserve(size()==0?8:2*size()); // double the capacity
-    construct_at(space,t); // initialize *space to t ("place t at space")
-    ++space;
+    std::string m {"Mary had a little lamb."};
+
+    for (auto p : find_all(m,'a')) // p is a string::iterator
+        if(*p!='a')
+            std::cerr << "string bug!\n";
+    
+    std::list<int> Id {1, 2, 3, 1, -11, 2};
+    for (auto p : find_all(Id,1)) // p is a list<int>::iterator
+        if (*p!=1)
+            std::cerr << "list bug!\n";
+
+    std::vector<string> vs {"red", "blue", "green", "green", "orange", "green"};
+    for (auto p : find_all(vs,"red")) // p is a vector<string>::iterator
+        if (*p!="red")
+            std::cerr <, "vector bug!\n";
+    
+    for (auto p : find_all(vc,"green"))
+        *p = "vert";
 }
 
-// vector can be copied in assignments and initialization
-std::vector<Entry> books = phone_book; // copies elements of phone_book to books
-// use references, pointers, or move operations if you don't want to copy
+// iterators seperate algorithims and containers
+// algos can just operator on the iterators, they don't need to know what kind of container stores the data. 
+// all the container has to do is provide iterators on request
 
-//12.2.1 Elements
-// if you have a class hiearachy that relies on virtual functions for polymorphic behaivor,
-// store a pointer or smart pointer to the class in a vector
-std::vector<Shape> vs; // No, don't - there is no room for a Circle or a Smiley
-std::vector<Shape*> vps; // better, but risks memory leaks
-std::vector<unique_ptr<Shape>> vups; // OK
+//13.3 Iterator Types
+// an particular iterator is a value of some type
+// in a vector, an iterator is probably a pointer
 
-//12.2.2 Range Checking
+// a vector iterator could also implemented as a pointer to a the vector plus an index
+// this kind of iterator allows range checking
 
-// std vector doesn't guareente range checking
-void silly(std::Vector<Entry>& book)
-{
-    int i = book[book.size()].number; // book.size() is out of range
-    // ..
-}
+// a list iterator is more complicated because each element of a list doesn't know where the next element of list is
+// a list iterator could be a pointer to a link
 
-// i will probably end up with a random value
 
-// adaption of std::vector with range checking
+// all iterators have common names and sematics
+// ++ applied to an iterator yields an iterator referring to the next element
+// * yields the element the iterator refers to
+// std makes different kinds of iterators available as concepts
 
-template<typename T>
-struct Vec : std::vector<T>
-{
-    using std::vector<T>::vector; // use the constructors from vector (under the name vec)
+// if the iterator is not a member type, so std offers iterator_t<X> that works where X's iterator is defined
 
-    T& operator[](int i) {return Vector<T>::at(i);} // range check
-    const T& operator[](int i) const {return vector<T>::at(i);} // range check const objects
+//13.3.1 Stream Iterators
+// iterators can be applied to i/o streams
 
-    auto begin() {return Checked_iter<vector<T>>}{*this};
-    auto end() {return Checked_iter<vector<T>>{*this, vector<T> end()}};
-}
+// ostream iterator
+ostream_iterator<string> oo {cout}; // write strings to cout
 
-// at() operation is a vector subscript operation that throws an exception of type out_of_range
-
-// Vec inherits everything from vector, except for substricpting operations for range checking
-
-// the above function would produce undefined behaivor with std::vector, and an out_of_range exception with vec
-
-// you can use a main function with a try catch block to minimize surprises from uncaught exceptions
+// effect of assiging *oo is t write the assigned value to cout
 
 int main()
-try {
-    // your code
-}
-catch (out_of_range&) {
-    std::cerr << "range error\n";
-}
-catch(...) {
-    std::cerr << "unknown exception thrown\n";
-}
-
-// std::vector is doesn't guareente range checking because it would cause a roughly 10% increase in cost
-// if we were to check all subscripting
-
-// range-for avoids range errors at no cost. 
-
-// vector::at() is safer
-
-//12.3 list
-// std::list is a doubley linked list
-// list is good for when inserting and deleting entries are common
-
-#include<list>
-
-std::list<Entry> phone_book_list {
-    {"David Hume",123456},
-    {"Karl Popper",234567},
-    {"Bertrand Arthur William Russell",345678}
-};
-
-//we search for elements by value, instead of doing subscripting
-
-int get_number(const string& s)
 {
-    for (const auto& x:phone_book_list)
-        if (x.name==s)
-            return x.number;
-    return 0; //use 0 to represent "number not found"
+    *oo = "Hello, "; // meaning cout<<"Hello,"
+    ++oo;
+    *oo = "world!\n"; // meaning cout<<"world\n"
 }
 
-int get_number(const std::string& s)
+// this allows using algos on streams
+std::vector<std::string>> v { "Hello", ", ", "World!\n" };
+copy(v,oo);
+
+// an istream_iterator is something that allows us to treat an input stream as a read-only container
+
+istream_iterator<string> ii {cin};
+
+// input iterators are used in pairs representing a sequence, so we must provide an istream_iterator to indicate the end of input. This is the defaul istream_iterator
+istream_iterator<string> eos {};
+
+// istream _itatoras and ostream_iterators are usually provided as args instead of used directly
+
+// a simple program to read a file, sort word read, eleminate duplicates, and write the results to anothe file
+
+int main()
 {
-    for (const auto& x : phone_book)
-        if (x.name==s)
-            return x.number;
-    return 0; // use 0 to represent "number not found"
+    std::string from, to;
+    std::cin >> from >> to; // get source and target file names
+
+    ifstream is {from}; // input stream for file "from"
+    istream_iterator<string> oo {os, "\n"}; // output iterator for stream plus a separator
+
+    std::vector<std::string> b {ii,eos}; // b is a vector initialized from input
+    sort(b); // sort the buffer
+
+    unique_copy(b,oo); // copy the buffer to output, discard replicated values
+
+    return !is.eof() || !os; // return error state
 }
 
-// the above function using iterators
+// in the above code, we used range versions of sort() and unique copy()
+// using the iterators directly, like sort(b.begin(),b.end()) is common in older code
 
-int get_number(const string& s)
+// to use a traditional iterator of a std algo and its ranges version, we need to explcitly qualify the call of the range version
+// or use a using declaration
+
+copy(v, oo); // potentially ambigous
+ranges::copy(v,oo); // OK
+using ranges::copy(v,oo); // copy(v,oo) Ok from here on
+copy(v,oo); // OK
+
+// ifstream is an istream file that can attached to a file
+// ofstream is an ostream that can be attached to a file
+
+// ostream_iterator's second arg is used to delimit output values
+
+// the code above could be made easier by putting strings in a set, which keeps its elements in order and doesn't store duplicates
+// we could thus replace the two lines using a vector with one using a set and replace unique_copy() with the simpler copy()
+
+set<string> b {ii, eos}; // collect strings from input
+copy(b,oo); // copy buffer to output
+
+// reduced program
+int main()
 {
-    for (auto p = phone_book.begin(); p!=phone_book.end(); ++p)
-        if (p->name==s)
-            return p->number;
-    return 0;
+    string from, to;
+    cin >> from >>to; // get source and target file names
+
+    ifstream is {from}; // input stream for file "from"
+    ofstream os {to}; // output stream for file "to"
+
+    set<string> b {istream_iterator<string>{is},istream_iterator<string>{}}; // read input
+    copy(b,ostream_iteartor<string>){os,"\n"}; // copy to output
+
+    return !is.eof() || !osl // return error state
 }
 
-// the compiler implements range-for in a similar manner
+// 13.4 Use of Predicates
 
-// adding and removing list elements
-void f(const Entry& ee, list<Entry>::iterator p, list<Entry>::iterator q)
+// predicates allow passing the action we want the algo to perform as an arg to the algo
+
+// searching a map for an int > 42
+
+void f(const map<string,int>& m)
 {
-    phone_book.insert(p,ee); // add ee before the element referred to by p
-    phone_book.erase(q); // remove the element referred to by q
+    auto p = find_if(m,Greater_than{42});
+    //..
 }
 
-// the above examples would run with a vector. vector are usually faster. Unless there is a reason not to, favor vector
-
-//12.4 Forward list
-// std provides a single-linked list called forward_list
-
-// it only allows forward iteration
-// it takes up less space
-// it doesn't keep track of the count of elements - count them if you need a count
-// if you can't afford to count, don't use a forward list
-
-// 12.5 Map
-// a balanced binary search tree
-
-// map might be a know as an associate array or a dictionary in other contexts
-
-// std map is a container of pairs and values
-
-#include <map>
-std::map<std::string,int> phone_book_map {
-    {"David Hume",123456},
-    {"Karl Popper",234567},
-    {"Bertrand Arthur William Russell",345678}
+// Greater_than is a function object
+struct Greater_than {
+    int val;
+    Greater_than(int v) : val{v} {}
+    bool operator()(const pair<string,int>& r) const {return r.second>val;}
 }
-// the map returns the second value when indexed by the first
 
-int get_number(const std::string& s)
+// we can also use a lambda
+
+auto p = find_if(m, [](const auto& r) {return r.second>42;});
+// predicate should not modify the element its applied to
+
+// 13.5 Algorithm Overview
+// algo: a finite set of rules which gives a sequence of operations for solving a specific set of problems
+// features of an algo
+// finiteness
+// definiteness
+// input
+// output
+// effectiveness
+
+// in std lib, an algo is a function template operating on sequences of elements
+
+// a half-open sequence from b to e is [b:e)
+
+// for each algo taking a [b:e), <ranges> offers a version that takes a range
+// if using both, explicitly qualify or use using
+
+// some algs modify element values, but none add or remove elements
+// a sequence does not identify it's container
+
+// you can add or delete elements with a function that knows about the container (back_inserter) or directly refers to the container itself (push_back() or erase())
+
+// lambdas are common as operations passed as arguments
+
+std::vector<int> v = {0,1,2,3,4,5};
+for_each(v,[](int& x){x=x*x}); // v={0,1,4,9,16,25}
+for_each(v.begin(),v.begin()+3,[](int& x){x=sqrt(x);}) // v={0,1,4,9,16,25}
+
+// it's best to stick to std lib code
+
+//13.6 Parallel Algorithms
+// if the computations on different data algorithms are independent, we cn execute the same task in parallel
+
+// parallel execution: tasks are done on multiple threads (often running on several processor cores)
+// vectorized execution: tasks are done in a single thread using vectorization, also known as SIMD ("Single Instruction, Multiple Data")
+
+// std lib supports both
+// in <execution> in namespace execution
+// seq: sequential execution
+// par: parallel execution(if feasible)
+// unseq: unsequenced (vectorized) execution (if feasible)
+// par_unseq: parallel and/or unsequenced (vectorized) execution (if feasible)/
+
+// example with std::sort()
+
+#include <execution>
+
+sort(v.begin(), v.end()); // sequential
+sort(std::seq, v.begin(), v.end()); // sequential (same as the defaul, just being specific)
+sort(std::par,v.begin(),v.end()); // parallel
+sort(std::par_unseq,v.begin(),v.end()); // parallel and/or vectorized
+
+// execution policy indiciators are just hints. a compiler or run-time scheduler will decide how much concurrency to use. 
+// don't make statements about efficiency without measurement
+
+// range versions of parallel algos are not yet in the standard, but they're easy to implement
+
+void sort(auto pol, random_access_range auto& r)
 {
-    return phone_book[s];
+    sort(pol,r.begin(),r.end());
 }
 
-// if a key isn't found, it's entered into the map with a default value
-// find() and insert() won't enter a value if it isn't found
+// many parallel algo are used primarily for numeric data
+// avoid data races and deadlock when requesting parallel execution
 
-//12.6 unordered_map
-// cost of a map lookup is O(log(n)) where n is the number of elements in the map
-// for a map with 1,000,000 elements, we perform about 20 comparisons and indirections to find an element
-// a hashed lookup can be better
-
-#include <unordered_map>
-
-// phone book implementation
-std::unordered_map<string,int> phone_book_unordered_map {
-    {"David Hume",123456},
-    {"Karl Popper",234567},
-    {"Bertrand Arthur William Russell",345678}
-};
-
-// subscripting an unordered map
-int get_number(const std::string& s)
-{
-    return phone_book_unordered_map[s];
-}
-
-// a common need for a custom has function is when we need an unordered container of one of our own types
-// implementation of a hash function is a function object
-
-#include  <functional>
-
-struct Record {
-    std::string name;
-    int product_code;
-    // ...
-};
-
-struct Rhash { // a hash function for Record
-    size_t operator()(const Record& r) const
-    {
-        return std::hash<std::string>()(r.name) ^ std::hash<int>()(r.product_code);
-    }
-};
-
-std::unordered_map<Record,Rhash> my_set; // set of Records using Rhash for lookup
-
-// designing good hash functions is complicated
-// it's usually best to make a new hash function by combing two with exclusive or ^
-// make sure that every value that takes part in the hash actually helps distinguish teh values
-// combing two hashes isn't beneficial in the above case unless multiple names exist for each product code. 
-
-// we can avoid explicitly passing the hash operation by defining it as a specialization of the standard library hash
-
-namespace std { // make a hash function for Record
-    template<> struct hash<Record> {
-        using argument_type = Record;
-        using result_type = size_t;
-
-        result_type operator()(const Record& r) const{
-            return hash<string>()(r.name) ^ hash<int>()(r.product_code);
-        }
-    };
-}
-
-// differences between a map and un unordered_map
-// map requires an ordering function (< is default) and yields an ordered sequence
-// an unordeded_map requires an equality function (the default is ==); and does not maintain an order amoung its elements
-
-// with a good hash function, an unordered_map is much faster than a map for big containers
-// worse case of an unordered_map with a bad hash function is worse than a map
-
-//12.7 Allocators
-// std containers allocate space with new by default
-// new and delete provide a general free store (called dynamic memory or heap) that can hold objects of arbitrary size
-// and user-controlled lifetime
-
-// the std lib can install allocators with specific semantics if needed
-
-// example of use of a pool allocator
-// an event queue that was using vectors as events that were passed as shared_pts
-
-struct Event {
-    std::vector<int> data = std::vector<int>(512);
-};
-
-std::list<std::shared_ptr<Event>> q;
-
-void producer()
-{
-    for (int n = 0; n!=LOTS; ++n) {
-        lock_guard lk {m}; // m is a mutex
-        q.push_back(std::make_shared<Event>());
-        cv.notify_one(); // cv is a condition_variable
-    }
-}
-
-// the code above led to massive fragmentation
-// passing 100,000 events amoung 16 producers and 4 consumers consumed 6gb of memory
-
-// the praditional solution to fragmentation problems involves rewriting the code to use a pool allocator
-// a pool allocator manages objects of a fixed size and allocates space for many objects at a time
-
-// defined in pmr sub-namespace of std
-
-pmr::synchronized_pool_resource pool; // make a pool
-struct Event {
-    std::vector<int> data = std::vector<int>{512,&pool}; // let Events use the pool
-};
-
-std::list<std::shared_ptr<Event>> q {$pool}; // let q use the pool
-
-// the above solution consumed less than 3mb where the other consumed 6gb
-// the amount of memory actually in use is unchanged
-
-// std containers now take optional allocator arguments
-// they use new and delete by default
-
-// other polymorphic resources include
-// unsynchronized_polymorphic_resource, like polymorphic resource but can only be used on one thread
-// monotonic_polymorphic_resource, a fast allocator that releases its memory only upon its destruction and can only be used by one thread
-
-// a polymorphic resource must be derived from memory_resource and define members allocate(), deallocate(), and is_equal()
-
-//12.8 Container Overview
-// unorderd containers are optimized for lookup with a key (often a string)
-// they're hash tables
-
-// std containers have a consistent set of operations
-// a vector is usually more efficient than a list for short sequences with small elements
-// list is the opposite
-
-// use vector unless you have a reason
-
-// an emplace operation (like emplace_back()) takes arguements for an element's constructor and builds the object in a newly allocated space in the container, rather than copying
-// an object into the container
-
-v.push_back(pair{1, "copy or move"}); // make a pair and move it into v
-v.emplace_back(1,"build in place"); // build a pair in v
-
-// for simple cases like these, optimization can result in performance being identical to both calls
